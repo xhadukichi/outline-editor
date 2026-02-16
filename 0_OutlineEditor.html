@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e1e1e">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>Ultimate Markdown Editor</title>
+
+<style>
+html,body{
+    margin:0;
+    height:100%;
+    overflow:hidden;   /* ★ 追加 */
+    font-family:monospace;
+    display:flex;
+    flex-direction:column;
+}
+
+/* ===== 固定メニュー ===== */
+#menu{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:6px;
+    background:#fff;
+    border-bottom:1px solid #ccc;
+    z-index:1000;
+}
+
+#menu button{
+    font-size:clamp(14px,2vh,20px);
+    height:clamp(34px,5vh,48px);
+    padding:0 12px;
+    border-radius:6px;
+    border:1px solid #888;
+    background:#f0f0f0;
+}
+
+#menu input{
+    height:clamp(30px,4vh,40px);
+}
+#menuToggle{
+    display:none;
+}
+
+/* 常に折り畳み可能にする */
+
+#menu{
+    flex-wrap:wrap;
+    overflow:hidden;
+    transition:height 0.3s ease;
+}
+
+/* 折り畳み状態 */
+body.menu-collapsed #menu{
+    height:18px;
+    padding:2px 4px;
+}
+
+/* 折り畳み時はトグル以外非表示 */
+body.menu-collapsed #menu button:not(#menuToggle),
+body.menu-collapsed #menu input,
+body.menu-collapsed #menu label{
+    display:none !important;
+}
+
+/* トグルは常時表示 */
+#menuToggle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    height:16px;
+    padding:0 4px;
+    line-height:1;
+}
+
+
+/* ===== 横画面時：小型トグル ===== */
+.landscape #menuToggle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:14px;          /* 小さめ */
+    height:16px;             /* ← 約1/3サイズ */
+    padding:0 4px;
+    line-height:1;
+}
+
+/* 折りたたみ時のメニュー高さを小型化 */
+.landscape.menu-collapsed #menu{
+    height:18px;        /* トグルに合わせる */
+    padding:2px 4px;
+}
+/* 折りたたみ時は他要素完全非表示 */
+.landscape.menu-collapsed #menu button:not(#menuToggle),
+.landscape.menu-collapsed #menu input,
+.landscape.menu-collapsed #menu label{
+    display:none !important;
+}
+
+/* ===== レイアウト ===== */
+#container{
+    position:fixed;        /* ★ 追加 */
+    top:var(--menu-height,50px);
+    left:0;
+    right:0;
+    bottom:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+
+.landscape #container{
+    flex-direction:row;
+}
+
+#outline{
+    flex:1;
+    overflow:auto;
+    background:#cccccc;		//#f3f3f3;
+    border-bottom:1px solid #ccc;
+    padding:8px 8px 8px 32px;
+    font-size:14px;
+}
+
+.landscape #outline{
+    border-bottom:none;
+    border-right:1px solid #ccc;
+}
+
+#editorArea{
+    flex:4;
+    display:flex;
+    overflow:hidden;
+}
+
+/* 行番号 */
+#leftPane{
+    width:90px;
+    min-width:90px;
+    background:#0b3d2e;
+    color:white;
+    overflow:hidden;        /* ← auto を hidden に変更 */
+    touch-action:none;      /* ← Android対策 */
+    overscroll-behavior: none;
+    text-align:right;
+    padding-right:8px;
+    box-sizing:border-box;
+}
+
+#lineSpacer{ height:0; }
+#lineNumbers{
+    white-space: pre;
+}
+
+/* 右側 */
+#rightPane{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+#ruler{
+    background:#cccc66;	//#eee;
+    border-bottom:1px solid #ccc;
+    padding-left:4px;
+}
+
+#editorWrapper{
+    position:relative;
+    flex:1;
+}
+
+#editor{
+    width:100%;
+    height:100%;
+    border:none;
+    outline:none;
+    resize:none;
+    padding:4px;
+    font-family:monospace;
+    white-space:pre-wrap;
+    word-break:break-word;
+    overflow-wrap:break-word;
+    overflow:auto;
+    background:#f3f3f3;
+
+}
+
+
+
+#mirror{
+    position:absolute;
+    visibility:hidden;
+    white-space:pre-wrap;
+    word-break:break-word;
+    overflow-wrap:break-word;
+    padding:4px;
+    font-family:monospace;
+    box-sizing:border-box;
+}
+/* ===== ダークモード ===== */
+@media (prefers-color-scheme: dark){
+
+    body{
+        background:#1e1e1e;
+        color:#e0e0e0;
+    }
+
+    #menu{
+        background:#2a2a2a;
+        border-bottom:1px solid #444;
+    }
+
+    #menu button{
+        background:#3a3a3a;
+        border:1px solid #555;
+        color:#eee;
+    }
+
+    #outline{
+        background:#252525;
+        border-color:#444;
+    }
+
+    #leftPane{
+        background:#10251d;
+        color:#ddd;
+    }
+
+    #ruler{
+        background:#444422;
+        border-color:#555;
+    }
+
+    #editor{
+        background:#1e1e1e;
+        color:#ffffff;
+    }
+
+    .outline-item.active-heading::before{
+        background:#00c896;
+    }
+
+    .current-line{
+        border-bottom:2px solid #ff6b5e;
+    }
+    body.dark{
+	    background:#1e1e1e;
+	    color:#e0e0e0;
+	}
+	body.dark #editor{
+	    background:#1e1e1e;
+	    color:#fff;
+	}
+}
+
+
+.current-line{
+    position:absolute;
+    left:0;
+    right:0;
+    pointer-events:none;
+    border-bottom:2px solid #ff3d2e;	//#0b3d2e;
+}
+.heading-marker{
+    position:absolute;
+    left:0;
+    right:0;
+    height:6px;   /* ← ここが太さ */
+    background:orange;
+    pointer-events:none;
+    opacity:0.85;
+}
+
+/* アウトライン */
+.outline-item{
+    cursor:pointer;
+    padding:2px 0;
+}
+
+.outline-item.active-heading{
+    font-weight:bold;
+    position:relative;
+}
+
+.outline-item.active-heading::before{
+    content:"";
+    position:absolute;
+    left:-16px;
+    top:2px;
+    bottom:2px;
+    width:4px;
+    background:#0b3d2e;
+}
+</style>
+</head>
+
+<body>
+
+<div id="menu">
+<button id="menuToggle" onclick="toggleMenu()">≡</button>
+<button onclick="newFile()">新規</button>
+<button onclick="openFile()">開く</button>
+<button onclick="saveFile()">保存</button>
+
+<button onclick="setFontSize(16)">16</button>
+<button onclick="setFontSize(20)">20</button>
+<button onclick="setFontSize(30)">30</button>
+
+<input type="text" id="searchText" placeholder="検索">
+<input type="text" id="replaceText" placeholder="置換">
+<label><input type="checkbox" id="caseCheck">Aa</label>
+<button onclick="findPrev()">前</button>
+<button onclick="findNext()">次</button>
+<button onclick="replaceOne()">置換</button>
+<button onclick="replaceAll()">全</button>
+<button onclick="toggleDark()">🌙</button>
+
+<input type="file" id="fileInput" style="display:none">
+</div>
+
+<div id="container">
+<div id="outline"></div>
+
+<div id="editorArea">
+<div id="leftPane">
+<div id="lineSpacer"></div>
+<div id="lineNumbers"></div>
+</div>
+
+<div id="rightPane">
+<div id="ruler"></div>
+<div id="editorWrapper">
+<textarea id="editor"></textarea>
+<div id="mirror"></div>
+<div id="markerLayer"></div>
+<div id="currentLine" class="current-line"></div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+const editor=document.getElementById("editor");
+const outline=document.getElementById("outline");
+const leftPane=document.getElementById("leftPane");
+const lineNumbers=document.getElementById("lineNumbers");
+const lineSpacer=document.getElementById("lineSpacer");
+const ruler=document.getElementById("ruler");
+const fileInput=document.getElementById("fileInput");
+const currentLine=document.getElementById("currentLine");
+const mirror=document.getElementById("mirror");
+const markerLayer = document.getElementById("markerLayer");
+
+let collapsedHeadings=new Set();
+let currentFileName=null;
+
+/* ===== 回転検出 ===== */
+function checkOrientation(){
+    if(window.innerWidth>window.innerHeight)
+        document.body.classList.add("landscape");
+    else
+        document.body.classList.remove("landscape");
+}
+window.addEventListener("load",checkOrientation);
+window.addEventListener("resize",checkOrientation);
+window.addEventListener("orientationchange",()=>setTimeout(()=>{
+    checkOrientation();
+    updateAll();
+},200));
+
+/* ===== レイアウト調整 ===== */
+function adjustLayout(){
+    const h=document.getElementById("menu").offsetHeight;
+    document.documentElement.style
+        .setProperty("--menu-height", h+"px");
+}
+
+window.addEventListener("load",adjustLayout);
+window.addEventListener("resize",adjustLayout);
+
+/* ===== フォント ===== */
+function setFontSize(size){
+    const px=size;
+    const lh=Math.round(px*1.5);
+    editor.style.fontSize=px+"px";
+    mirror.style.fontSize=px+"px";
+    leftPane.style.fontSize=px+"px";
+    ruler.style.fontSize=px+"px";
+    editor.style.lineHeight=lh+"px";
+    mirror.style.lineHeight=lh+"px";
+    leftPane.style.lineHeight=lh+"px";
+    updateAll();
+}
+function toggleMenu(){
+    document.body.classList.toggle("menu-collapsed");
+    adjustLayout(); // 高さ再計算
+}
+
+
+/* ===== ルーラー ===== */
+function updateRuler(){
+    let t="";
+    for(let i=1;i<=200;i++) t+=(i%10==0)?(i/10):".";
+    ruler.textContent=t;
+}
+
+/* ===== 行番号 ===== */
+function updateLineNumbers(){
+    mirror.style.width=editor.clientWidth+"px";
+    const lh=parseFloat(editor.style.lineHeight);
+    const lines=editor.value.split("\n");
+
+    let out="";
+
+    lines.forEach((line,i)=>{
+        mirror.textContent=line||" ";
+        const wrap=Math.max(1,Math.round(mirror.scrollHeight/lh));
+
+        out+=(i+1)+"\n";
+        for(let j=1;j<wrap;j++) out+=" \n";
+    });
+
+    lineNumbers.textContent=out;
+}
+
+
+
+/* ===== 現在行 ===== */
+function updateCurrentLine(){
+    const caret=editor.selectionStart;
+    let text=editor.value.substring(0,caret);
+    if(text.endsWith("\n")) text+=" ";
+    mirror.style.width=editor.clientWidth+"px";
+    mirror.textContent=text||" ";
+    const h=mirror.scrollHeight;
+    const lh=parseFloat(editor.style.lineHeight);
+    currentLine.style.height=lh+"px";
+    currentLine.style.top=(h-lh-editor.scrollTop -7)+"px";
+}
+function updateHeadingMarkers(){
+
+    markerLayer.innerHTML = "";
+
+    const lines = editor.value.split("\n");
+    const lh = parseFloat(editor.style.lineHeight);
+    const paddingTop = parseFloat(
+        getComputedStyle(editor).paddingTop
+    );
+
+    mirror.style.width = editor.clientWidth + "px";
+
+    let textBefore = "";
+
+    for(let i=0;i<lines.length;i++){
+
+        const line = lines[i];
+
+        if(/^#+\s/.test(line)){
+
+            let y;
+
+            if(textBefore === ""){
+                y = paddingTop + 4;   // ← ここで微調整
+            }else{
+                mirror.textContent = textBefore;
+                y = mirror.scrollHeight;
+            }
+
+            const marker = document.createElement("div");
+            marker.className = "heading-marker";
+
+            marker.style.top =
+                (y - editor.scrollTop + (lh - 9)) + "px";	//←(lh - 6)の値で位置を調整
+
+            markerLayer.appendChild(marker);
+        }
+
+        textBefore += line + "\n";
+    }
+}
+
+
+
+/* ===== アウトライン ===== */
+function updateOutline(){
+    outline.innerHTML="";
+    const lines=editor.value.split("\n");
+    let hideLevel=null;
+
+    for(let i=0;i<lines.length;i++){
+        const m=lines[i].match(/^(#+)\s+(.*)$/);
+        if(!m) continue;
+
+        const level=m[1].length;
+
+        if(hideLevel!==null){
+            if(level>hideLevel) continue;
+            else hideLevel=null;
+        }
+
+        // ★ これが抜けていた
+        const div=document.createElement("div");
+        div.className="outline-item";
+        div.dataset.line=i;
+        div.dataset.level=level;
+
+        const icon=document.createElement("span");
+
+        // レベル別インデント
+        const indent="　".repeat(level-1);
+        icon.textContent=
+            indent + (collapsedHeadings.has(i) ? "▶ " : "▼ ");
+
+        icon.onclick=(e)=>{
+            e.stopPropagation();
+            toggleCollapse(i);
+        };
+
+        const text=document.createElement("span");
+        text.textContent=m[2];
+
+        div.appendChild(icon);
+        div.appendChild(text);
+        div.onclick=()=>jumpToLine(i);
+
+        outline.appendChild(div);
+
+        if(collapsedHeadings.has(i)) hideLevel=level;
+    }
+
+    highlightCurrentHeading();
+}
+
+
+function toggleCollapse(line){
+    if(collapsedHeadings.has(line))
+        collapsedHeadings.delete(line);
+    else
+        collapsedHeadings.add(line);
+    updateOutline();
+}
+
+function highlightCurrentHeading(){
+    const cursorLine=
+        editor.value.substring(0,editor.selectionStart)
+        .split("\n").length-1;
+
+    const items=document.querySelectorAll(".outline-item");
+    items.forEach(i=>i.classList.remove("active-heading"));
+
+    let best=null;
+    let bestLine=-1;
+
+    items.forEach(item=>{
+        const line=parseInt(item.dataset.line);
+        if(line<=cursorLine && line>bestLine){
+            bestLine=line;
+            best=item;
+        }
+    });
+
+    if(best) best.classList.add("active-heading");
+}
+
+document.addEventListener("selectionchange",()=>{
+    if(document.activeElement===editor){
+        updateCurrentLine();
+        highlightCurrentHeading();
+    }
+});
+
+function jumpToLine(line){
+    const lines=editor.value.split("\n");
+    let pos=0;
+    for(let i=0;i<line;i++) pos+=lines[i].length+1;
+    editor.focus();
+    editor.setSelectionRange(pos,pos);
+}
+
+/* ===== 検索置換 ===== */
+function findNext(){
+
+    const keyword = document.getElementById("searchText").value;
+    if(!keyword) return;
+
+    const flags = document.getElementById("caseCheck").checked ? "g" : "gi";
+    const regex = new RegExp(keyword, flags);
+
+    const text = editor.value;
+    const start = editor.selectionEnd;
+
+    let match;
+    let index = -1;
+
+    while((match = regex.exec(text)) !== null){
+        if(match.index >= start){
+            index = match.index;
+            break;
+        }
+    }
+
+    // 末尾まで無ければ先頭へ
+    if(index === -1){
+        regex.lastIndex = 0;
+        match = regex.exec(text);
+        if(!match){
+            alert("見つかりません");
+            return;
+        }
+        index = match.index;
+    }
+
+    editor.focus();
+    editor.setSelectionRange(index, index + match[0].length);
+
+    scrollToSelection();
+}
+function findPrev(){
+
+    const keyword = document.getElementById("searchText").value;
+    if(!keyword) return;
+
+    const flags = document.getElementById("caseCheck").checked ? "g" : "gi";
+    const regex = new RegExp(keyword, flags);
+
+    const text = editor.value;
+    const start = editor.selectionStart;
+
+    let match;
+    let lastValid = null;
+
+    while((match = regex.exec(text)) !== null){
+        if(match.index < start){
+            lastValid = match;
+        }else{
+            break;
+        }
+    }
+
+    // 先頭まで無ければ末尾へ
+    if(!lastValid){
+        while((match = regex.exec(text)) !== null){
+            lastValid = match;
+        }
+        if(!lastValid){
+            alert("見つかりません");
+            return;
+        }
+    }
+
+    editor.focus();
+    editor.setSelectionRange(
+        lastValid.index,
+        lastValid.index + lastValid[0].length
+    );
+
+    scrollToSelection();
+}
+
+function scrollToSelection(){
+
+    const caret = editor.selectionStart;
+
+    let text = editor.value.substring(0, caret);
+    if(text.endsWith("\n")) text += " ";
+
+    mirror.style.width = editor.clientWidth + "px";
+    mirror.textContent = text || " ";
+
+    const caretHeight = mirror.scrollHeight;
+    const lineHeight = parseFloat(editor.style.lineHeight);
+
+    // 中央付近に表示
+    editor.scrollTop = caretHeight - (editor.clientHeight / 2);
+
+    updateLineNumbers();
+}
+
+
+function replaceOne(){
+    const keyword=document.getElementById("searchText").value;
+    const replacement=document.getElementById("replaceText").value;
+    const flags=document.getElementById("caseCheck").checked?"":"i";
+    const regex=new RegExp("^"+keyword+"$",flags);
+    const selected=editor.value.substring(editor.selectionStart,editor.selectionEnd);
+    if(regex.test(selected)){
+        const before=editor.value.substring(0,editor.selectionStart);
+        const after=editor.value.substring(editor.selectionEnd);
+        editor.value=before+replacement+after;
+        updateAll();
+    }
+    findNext();
+}
+
+function replaceAll(){
+    const keyword=document.getElementById("searchText").value;
+    const replacement=document.getElementById("replaceText").value;
+    const flags=document.getElementById("caseCheck").checked?"g":"gi";
+    const regex=new RegExp(keyword,flags);
+    editor.value=editor.value.replace(regex,replacement);
+    updateAll();
+}
+
+/* ===== ファイル ===== */
+function newFile(){
+    if(editor.value&&!confirm("破棄しますか？")) return;
+    editor.value="";
+    currentFileName=null;
+    updateAll();
+}
+function openFile(){ fileInput.click(); }
+fileInput.addEventListener("change",e=>{
+    const file=e.target.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=evt=>{
+        editor.value=evt.target.result;
+        currentFileName=file.name;
+        updateAll();
+    };
+    reader.readAsText(file,"UTF-8");
+});
+function saveFile(){
+    const blob=new Blob([editor.value],{type:"text/plain"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=currentFileName||"untitled.txt";
+    a.click();
+}
+function toggleDark(){
+    document.body.classList.toggle("dark");
+}
+
+
+/* ===== イベント ===== */
+editor.addEventListener("input",updateAll);
+editor.addEventListener("scroll",()=>{
+    leftPane.scrollTop=editor.scrollTop;
+    updateCurrentLine();
+    updateHeadingMarkers();   // ← 必ず入れる
+});
+document.addEventListener("keydown",e=>{
+    if(e.ctrlKey&&e.key==="s"){
+        e.preventDefault();
+        saveFile();
+    }
+});
+
+function updateAll(){
+    updateRuler();
+    lineSpacer.style.height=ruler.offsetHeight+"px";
+    updateLineNumbers();
+    updateOutline();
+    updateCurrentLine();
+    updateHeadingMarkers();   // ← 追加
+}
+
+
+setFontSize(20);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
