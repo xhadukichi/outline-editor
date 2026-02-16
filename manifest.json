@@ -1,7 +1,7 @@
 {
   "name": "Ultimate Markdown Editor",
   "short_name": "UM Editor",
-  "start_url": "./0_OutlineEditor.html",
+  "start_url": "/outline-editor/",
   "display": "standalone",
   "background_color": "#1e1e1e",
   "theme_color": "#1e1e1e",
@@ -19,3 +19,4 @@
     }
   ]
 }
+
