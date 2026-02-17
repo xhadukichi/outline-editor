@@ -1,11 +1,11 @@
 {
-  "name": "Ultimate Markdown Editor",
-  "short_name": "UM Editor",
+  "name": "Outline Editor",
+  "short_name": "Outline",
   "start_url": "/outline-editor/",
   "display": "standalone",
-  "background_color": "#1e1e1e",
-  "theme_color": "#1e1e1e",
-  "orientation": "portrait",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "icon-192.png",
@@ -19,4 +19,3 @@
     }
   ]
 }
-
