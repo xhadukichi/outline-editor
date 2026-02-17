@@ -734,25 +734,32 @@ fileInput.addEventListener("change",e=>{
 });
 function saveFile(){
 
-    let name = prompt("ファイル名を入力してください",
-                      currentFileName || "untitled.txt");
+    let name = prompt(
+        "ファイル名を入力してください",
+        currentFileName || "untitled.txt"
+    );
 
     if(!name) return;
 
-    if(!name.endsWith(".txt"))
+    name = name.trim();
+
+    // 拡張子が無い場合のみ .txt を付ける
+    if(!/\.[a-zA-Z0-9]+$/.test(name)){
         name += ".txt";
+    }
 
     currentFileName = name;
 
-    const blob = new Blob([editor.value],
-        {type:"text/plain"});
+    const blob = new Blob(
+        [editor.value],
+        {type: "text/plain"}
+    );
 
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name;
     a.click();
-}
-function autoSave(){
+}function autoSave(){
     localStorage.setItem("ume-data", editor.value);
 }
 
@@ -798,3 +805,4 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
