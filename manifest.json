@@ -1,6 +1,6 @@
 {
-  "name": "Outline Editor",
-  "short_name": "Outline",
+  "name": "Ultimate Markdown Editor",
+  "short_name": "UMEditor",
   "start_url": "/outline-editor/",
   "display": "standalone",
   "orientation": "any",
@@ -19,3 +19,4 @@
     }
   ]
 }
+
