@@ -2,7 +2,8 @@ self.addEventListener("install", e => {
   e.waitUntil(
     caches.open("editor-cache").then(cache => {
       return cache.addAll([
-        "./0_OutlineEditor.html",
+        /* "./0_OutlineEditor.html", */
+        "./index.html",
         "./manifest.json"
       ]);
     })
@@ -16,3 +17,4 @@ self.addEventListener("fetch", e => {
     })
   );
 });
+
