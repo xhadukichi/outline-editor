@@ -258,6 +258,10 @@ body.menu-collapsed #menu label{
         background:#10251d;
         color:#ddd;
     }
+    
+    #resizer{
+    touch-action:none;
+	}
 
     #ruler{
         background:#444422;
@@ -851,30 +855,29 @@ if ('serviceWorker' in navigator) {
 const resizer = document.getElementById("resizer");
 let isResizing = false;
 
-resizer.addEventListener("mousedown", () => {
+resizer.addEventListener("pointerdown", (e) => {
     isResizing = true;
+    resizer.setPointerCapture(e.pointerId);
     document.body.style.cursor = getComputedStyle(resizer).cursor;
 });
 
-document.addEventListener("mousemove", (e) => {
+resizer.addEventListener("pointermove", (e) => {
     if(!isResizing) return;
 
     const container = document.getElementById("container");
     const rect = container.getBoundingClientRect();
 
     if(document.body.classList.contains("landscape")){
-        // 横分割
         const newWidth = e.clientX - rect.left;
 
-        outline.style.height = "";   // ← 重要
+        outline.style.height = "";
         outline.style.flex = "none";
         outline.style.width = newWidth + "px";
 
     }else{
-        // 縦分割
         const newHeight = e.clientY - rect.top;
 
-        outline.style.width = "";    // ← 重要
+        outline.style.width = "";
         outline.style.flex = "none";
         outline.style.height = newHeight + "px";
     }
@@ -882,10 +885,12 @@ document.addEventListener("mousemove", (e) => {
     updateAll();
 });
 
-document.addEventListener("mouseup", () => {
+resizer.addEventListener("pointerup", (e) => {
     isResizing = false;
+    resizer.releasePointerCapture(e.pointerId);
     document.body.style.cursor = "";
 });
+
 
 
 
