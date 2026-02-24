@@ -260,7 +260,7 @@ body.menu-collapsed #menu label{
     }
     
     #resizer{
-    touch-action:none;
+    	touch-action:none;
 	}
 
     #ruler{
@@ -853,29 +853,43 @@ if ('serviceWorker' in navigator) {
 
 
 const resizer = document.getElementById("resizer");
+
 let isResizing = false;
+let startX = 0;
+let startY = 0;
+let startWidth = 0;
+let startHeight = 0;
 
 resizer.addEventListener("pointerdown", (e) => {
+
     isResizing = true;
     resizer.setPointerCapture(e.pointerId);
-    document.body.style.cursor = getComputedStyle(resizer).cursor;
+
+    const rect = outline.getBoundingClientRect();
+
+    startX = e.clientX;
+    startY = e.clientY;
+    startWidth  = rect.width;
+    startHeight = rect.height;
 });
 
 resizer.addEventListener("pointermove", (e) => {
+
     if(!isResizing) return;
 
-    const container = document.getElementById("container");
-    const rect = container.getBoundingClientRect();
-
     if(document.body.classList.contains("landscape")){
-        const newWidth = e.clientX - rect.left;
+        // 横レイアウト
+        const dx = e.clientX - startX;
+        const newWidth = startWidth + dx;
 
         outline.style.height = "";
         outline.style.flex = "none";
         outline.style.width = newWidth + "px";
 
     }else{
-        const newHeight = e.clientY - rect.top;
+        // 縦レイアウト
+        const dy = e.clientY - startY;
+        const newHeight = startHeight + dy;
 
         outline.style.width = "";
         outline.style.flex = "none";
@@ -888,9 +902,7 @@ resizer.addEventListener("pointermove", (e) => {
 resizer.addEventListener("pointerup", (e) => {
     isResizing = false;
     resizer.releasePointerCapture(e.pointerId);
-    document.body.style.cursor = "";
 });
-
 
 
 
