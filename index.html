@@ -14,8 +14,8 @@ html,body{
     height:100%;
     overflow:hidden;   /* ★ 追加 */
     font-family:monospace;
-    display:flex;
-    flex-direction:column;
+/*    display:flex;
+    flex-direction:column;	*/
 }
 
 /* ===== 固定メニュー ===== */
@@ -109,14 +109,14 @@ body.menu-collapsed #menu label{
 /* ===== レイアウト ===== */
 
 
+/* ===== container ===== */
 #container{
-    position:fixed;        /* ★ 追加 */
+    position:absolute;
     top:var(--menu-height,50px);
     left:0;
     right:0;
     bottom:0;
     display:flex;
-    flex-direction:column;
     overflow:hidden;
 }
 
@@ -126,26 +126,58 @@ body.menu-collapsed #menu label{
 }
 
 /* ===== 仕切り ===== */
+/* 共通 */
 #resizer{
     background:#999;
-    z-index:10;
+    flex-shrink:0;
+    touch-action:none;
 }
 
-/* 縦レイアウト（通常） */
-#resizer{
-    height:6px;
+
+/* ===== 縦（上下分割） ===== */
+body:not(.landscape) #container{
+    flex-direction:column;
+}
+
+body:not(.landscape) #outline{
+    height:200px;
+    width:100%;
+}
+
+body:not(.landscape) #resizer{
+    height:12px;
+    width:100%;
     cursor:row-resize;
+    background:#999;
 }
 
-/* 横レイアウト */
-.landscape #resizer{
-    width:6px;
-    height:auto;
+/* ===== 横（左右分割） ===== */
+body.landscape #container{
+    flex-direction:row;
+}
+
+body.landscape #outline{
+    width:300px;
+    height:100%;
+}
+
+body.landscape #resizer{
+    width:12px;
+    height:100%;
     cursor:col-resize;
+    background:#999;
+}
+
+/* editorは常に残り全部 */
+#editorArea{
+    flex:1;
+    display:flex;
+    overflow:hidden;
 }
 
 #outline{
-    flex:1;
+    width:300px;   /*   初期幅 */
+/*	height:100px;     初期高さ */
     overflow:auto;
     background:#cccccc;		//#f3f3f3;
     border-bottom:1px solid #ccc;
@@ -153,16 +185,14 @@ body.menu-collapsed #menu label{
     font-size:14px;
 }
 
+
+/* 横レイアウト */
 .landscape #outline{
+/*    width:300px;     /* 初期幅 */
     border-bottom:none;
     border-right:1px solid #ccc;
 }
 
-#editorArea{
-    flex:4;
-    display:flex;
-    overflow:hidden;
-}
 
 /* 行番号 */
 #leftPane{
@@ -402,21 +432,29 @@ function checkOrientation(){
 
     if(nowLandscape){
         document.body.classList.add("landscape");
+
+        // ★ 横になったら高さは不要
+        outline.style.removeProperty("height");
+
+        // 初期幅を入れたいならここで指定
+        if(!outline.style.width){
+            outline.style.width = "300px";
+        }
+
     }else{
         document.body.classList.remove("landscape");
+
+        // ★ 縦になったら幅は不要
+        outline.style.removeProperty("width");
+
+        if(!outline.style.height){
+            outline.style.height = "200px";
+        }
     }
 
-    // ★ レイアウト変更が発生した場合だけリセット
-    if(wasLandscape !== nowLandscape){
-
-        // 固定サイズ解除
-        outline.style.width  = "";
-        outline.style.height = "";
-        outline.style.flex   = "";
-
-        updateAll();
-    }
+    updateAll();
 }
+
 
 
 window.addEventListener("load",checkOrientation);
@@ -853,53 +891,46 @@ if ('serviceWorker' in navigator) {
 
 
 const resizer = document.getElementById("resizer");
+const container = document.getElementById("container");
 
 let isResizing = false;
-let startX = 0;
-let startY = 0;
-let startWidth = 0;
-let startHeight = 0;
+let startX, startY;
+let startWidth, startHeight;
 
-resizer.addEventListener("pointerdown", (e) => {
-
+resizer.addEventListener("pointerdown", (e)=>{
     isResizing = true;
-    resizer.setPointerCapture(e.pointerId);
-
-    const rect = outline.getBoundingClientRect();
 
     startX = e.clientX;
     startY = e.clientY;
-    startWidth  = rect.width;
-    startHeight = rect.height;
+
+    startWidth = outline.offsetWidth;
+    startHeight = outline.offsetHeight;
+
+    resizer.setPointerCapture(e.pointerId);
 });
 
-resizer.addEventListener("pointermove", (e) => {
-
+resizer.addEventListener("pointermove", (e)=>{
     if(!isResizing) return;
 
     if(document.body.classList.contains("landscape")){
-        // 横レイアウト
         const dx = e.clientX - startX;
         const newWidth = startWidth + dx;
 
-        outline.style.height = "";
-        outline.style.flex = "none";
-        outline.style.width = newWidth + "px";
+        if(newWidth > 80 && newWidth < container.clientWidth - 80){
+            outline.style.width = newWidth + "px";
+        }
 
     }else{
-        // 縦レイアウト
         const dy = e.clientY - startY;
         const newHeight = startHeight + dy;
 
-        outline.style.width = "";
-        outline.style.flex = "none";
-        outline.style.height = newHeight + "px";
+        if(newHeight > 80 && newHeight < container.clientHeight - 80){
+            outline.style.height = newHeight + "px";
+        }
     }
-
-    updateAll();
 });
 
-resizer.addEventListener("pointerup", (e) => {
+resizer.addEventListener("pointerup", (e)=>{
     isResizing = false;
     resizer.releasePointerCapture(e.pointerId);
 });
