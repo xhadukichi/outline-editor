@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#1e1e1e">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <title>Ultimate Markdown Editor</title>
 
 <style>
@@ -173,8 +173,6 @@ body.landscape #resizer{
     flex:1;
     display:flex;
     overflow:hidden;
-    position:relative;
-	background: transparent;	/*　透明化	*/
 }
 
 #outline{
@@ -231,7 +229,7 @@ body.landscape #resizer{
     flex:1;
     display:flex;
     flex-direction:column;
-  //	overflow:hidden;
+    overflow:hidden;
 }
 
 #ruler{
@@ -242,17 +240,7 @@ body.landscape #resizer{
 
 #editorWrapper{
     position:relative;
-   	flex:1;
-}
-
-#markerLayer{
-    position:absolute;
-    top:0;
-    left:0;
-    right:0;
-    bottom:0;
-    pointer-events:none;
-    z-index:1;
+    flex:1;
 }
 
 #editor{
@@ -267,10 +255,8 @@ body.landscape #resizer{
     word-break:break-word;
     overflow-wrap:break-word;
     overflow:auto;
-    /*	background:#f3f3f3;	*/
-	position:relative;
-    background:transparent;   /* ★ 重要 */
-    z-index:2;
+    background:#f3f3f3;
+
 }
 
 
@@ -285,90 +271,75 @@ body.landscape #resizer{
     font-family:monospace;
     box-sizing:border-box;
 }
+/* ===== ダークモード ===== */
+@media (prefers-color-scheme: dark){
 
+    body{
+        background:#1e1e1e;
+        color:#e0e0e0;
+    }
 
-#lineNumbers div{
-    height:1.5em;
-}
+    #menu{
+        background:#2a2a2a;
+        border-bottom:1px solid #444;
+    }
 
-.active-line-number{
-    color:#ff3d2e;
-    font-weight:bold;
-}
+    #menu button{
+        background:#3a3a3a;
+        border:1px solid #555;
+        color:#eee;
+    }
 
-   
+    #outline{
+        background:#252525;
+        border-color:#444;
+    }
+
+    #leftPane{
+        background:#10251d;
+        color:#ddd;
+    }
+    
     #resizer{
     	touch-action:none;
 	}
+
+    #ruler{
+        background:#444422;
+        border-color:#555;
+    }
+
+    #editor{
+        background:#1e1e1e;
+        color:#ffffff;
+    }
 
     .outline-item.active-heading::before{
         background:#00c896;
     }
 
-    /*.current-line{
-    	/*position:absolute;
-	    left:0;
-	    right:0;
-	    height:1.5em;
-	    background:rgba(255, 100, 80, 0.15);
-	    pointer-events:none;
-	    z-index:1;
-
+    .current-line{
         border-bottom:2px solid #ff6b5e;
-        /*	background:rgba(255, 120, 80, 0.18);	*/
-        
-      /*  position:absolute;
-	    left:0;
-	    right:0;
-	   /* height:1.5em !important;    ★ 強制 */
-	  /*  background:red;
-	    z-index:3;   /* ★ これを追加 */
-	  /*  pointer-events:none;
-    /*　}　*/
-    
-    
-body.dark{
-    background:#1e1e1e;
-    color:#e0e0e0;
-}
-
-body.dark #menu{
-    background:#2a2a2a;
-    border-bottom:1px solid #444;
-}
-
-body.dark #menu button{
-    background:#3a3a3a;
-    border:1px solid #555;
-    color:#eee;
-}
-
-body.dark #outline{
-    background:#252525;
-    border-color:#444;
-}
-
-body.dark #leftPane{
-    background:#10251d;
-    color:#ddd;
-}
-
-body.dark #ruler{
-    background:#444422;
-    border-color:#555;
-}
-
-body.dark #editor{
-    background:transparent;
-    color:#ffffff;
-}
-
-body.dark #statusBar{
+    }
+    body.dark{
+	    background:#1e1e1e;
+	    color:#e0e0e0;
+	}
+	body.dark #editor{
+	    background:#1e1e1e;
+	    color:#fff;
+	}
+    #statusBar{
+        background:#2a2a2a;
+        border-top:1px solid #444;
+        color:#ddd;
+    }
+    body.dark #statusBar{
     background:#2a2a2a;
     border-top:1px solid #444;
     color:#ddd;
+	}
 }
-
 
 
 
@@ -377,11 +348,8 @@ body.dark #statusBar{
     left:0;
     right:0;
     pointer-events:none;
-    border-bottom:2px solid #ff3d2e;	//#0b3d2e;	アンダーラインの色
-    background:rgba(255, 100, 80, 0.15);  /* ← 背景色 */
-    z-index:1;   /* ← 2より大きくする */
+    border-bottom:2px solid #ff3d2e;	//#0b3d2e;
 }
-
 .heading-marker{
     position:absolute;
     left:0;
@@ -451,10 +419,10 @@ body.dark #statusBar{
 <div id="rightPane">
 <div id="ruler"></div>
 <div id="editorWrapper">
-    <div id="markerLayer"></div>
-    <textarea id="editor"></textarea>
-    <div id="currentLine" class="current-line"></div>
-    <div id="mirror"></div>
+<textarea id="editor"></textarea>
+<div id="mirror"></div>
+<div id="markerLayer"></div>
+<div id="currentLine" class="current-line"></div>
 </div>
 <div id="statusBar">行 1、列 1</div>  <!-- ★ここ -->
 </div>
@@ -557,60 +525,36 @@ function updateRuler(){
 
 /* ===== 行番号 ===== */
 function updateLineNumbers(){
+    mirror.style.width=editor.clientWidth+"px";
+    const lh=parseFloat(editor.style.lineHeight);
+    const lines=editor.value.split("\n");
 
-    mirror.style.width = editor.clientWidth + "px";
-    const lh = parseFloat(editor.style.lineHeight);
-    const lines = editor.value.split("\n");
+    let out="";
 
-    const cursorLine =
-        editor.value.substring(0, editor.selectionStart)
-        .split("\n").length - 1;
+    lines.forEach((line,i)=>{
+        mirror.textContent=line||" ";
+        const wrap=Math.max(1,Math.round(mirror.scrollHeight/lh));
 
-    let html = "";
-
-    lines.forEach((line, i)=>{
-
-        mirror.textContent = line || " ";
-        const wrap = Math.max(
-            1,
-            Math.round(mirror.scrollHeight / lh)
-        );
-
-        const isActive = (i === cursorLine);
-
-        html += `<div class="${
-            isActive ? "active-line-number" : ""
-        }">${i+1}</div>`;
-
-        for(let j=1;j<wrap;j++){
-            html += "<div>&nbsp;</div>";
-        }
+        out+=(i+1)+"\n";
+        for(let j=1;j<wrap;j++) out+=" \n";
     });
 
-    lineNumbers.innerHTML = html;
+    lineNumbers.textContent=out;
 }
 
 
 
 /* ===== 現在行 ===== */
 function updateCurrentLine(){
-
-    const caret = editor.selectionStart;
-    let text = editor.value.substring(0, caret);
-
-    if(text.endsWith("\n")) text += " ";
-
-    mirror.style.width = editor.clientWidth + "px";
-    mirror.textContent = text || " ";
-
-    const h = mirror.scrollHeight;
-
-    // ★ ここを変更
-    const lh = parseFloat(getComputedStyle(editor).lineHeight);
-
-    currentLine.style.height = lh + "px";
-    currentLine.style.top =
-        (h - lh - editor.scrollTop - 10) + "px";	/* ←　アンダーライン位置の微調整(初期値 7)　*/
+    const caret=editor.selectionStart;
+    let text=editor.value.substring(0,caret);
+    if(text.endsWith("\n")) text+=" ";
+    mirror.style.width=editor.clientWidth+"px";
+    mirror.textContent=text||" ";
+    const h=mirror.scrollHeight;
+    const lh=parseFloat(editor.style.lineHeight);
+    currentLine.style.height=lh+"px";
+    currentLine.style.top=(h-lh-editor.scrollTop -10)+"px";	/* ←　アンダーライン位置の微調整(初期値 7)　*/
 }
 function updateHeadingMarkers(){
 
@@ -737,26 +681,13 @@ function highlightCurrentHeading(){
     if(best) best.classList.add("active-heading");
 }
 
-//　document.addEventListener("selectionchange",()=>{
-//    if(document.activeElement===editor){
-//        updateCurrentLine();
-//        highlightCurrentHeading();
-//        updateCursorPosition();   // ← 追加
-//        updateLineNumbers();   // ← 追加
-//    }
-//});
-
-editor.addEventListener("keyup", handleCursorMove);
-editor.addEventListener("click", handleCursorMove);
-editor.addEventListener("input", handleCursorMove);
-
-function handleCursorMove(){
-    updateCurrentLine();
-    highlightCurrentHeading();
-    updateCursorPosition();
-    updateLineNumbers();
-}
-
+document.addEventListener("selectionchange",()=>{
+    if(document.activeElement===editor){
+        updateCurrentLine();
+        highlightCurrentHeading();
+        updateCursorPosition();   // ← 追加
+    }
+});
 
 function jumpToLine(line){
     const lines=editor.value.split("\n");
