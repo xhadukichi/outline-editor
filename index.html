@@ -246,6 +246,11 @@ body.landscape #resizer{
     position:relative;
     overflow:hidden;
     flex:1;
+	background: #f3f3f3; /* ライトモードの背景色 */
+}
+
+body.dark #editorWrapper {
+    background: #1e1e1e; /* ダークモードの背景色 */
 }
 
 #editor{
@@ -318,7 +323,8 @@ body.dark #ruler{
 }
 
 body.dark #editor{
-    background:#1e1e1e;
+    /*	background:#1e1e1e;	*/
+	background: transparent; /* 背景は常に透明にする */
     color:#ffffff;
 }
 
@@ -347,6 +353,13 @@ body.dark #statusBar{
     background:orange;
     pointer-events:none;
     opacity:0.85;
+	z-index: 0; /* markerLayer内での重なり。editor(z-index:1)より下 */
+}
+
+/* ダークモード用のマーカー色（お好みで調整してください） */
+body.dark .heading-marker {
+    background: #d35400; /* 少し暗めのオレンジ、あるいはもっと明るい黄色など */
+    opacity: 0.6;
 }
 
 /* アウトライン */
