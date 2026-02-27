@@ -36,11 +36,14 @@ html,body{
 //*　メニューボタンサイズ設定　*//
 #menu button{
     font-size:clamp(10px,2vh,16px);	 //* font-size:clamp(14px,2vh,20px); *//
-    height:clamp(16px,2vh,24px);	//* height:clamp(34px,5vh,48px); *//
     padding:0 8px;	//* padding:0 12px; *//
     border-radius:6px;
     border:1px solid #888;
     background:#f0f0f0;
+    
+    height:24px;        /* clampをやめて固定 */
+    line-height:22px;   /* 中央揃え安定 */
+    box-sizing:border-box;
 }
 
 #menu input{
@@ -241,12 +244,15 @@ body.landscape #resizer{
 
 #editorWrapper{
     position:relative;
+    overflow:hidden;
     flex:1;
 }
 
 #editor{
     width:100%;
     height:100%;
+    max-height: 100%;   /* 上限固定 */
+    min-height: 100%;   /* 下限固定 */
     border:none;
     outline:none;
     resize:none;
@@ -256,8 +262,14 @@ body.landscape #resizer{
     word-break:break-word;
     overflow-wrap:break-word;
     overflow:auto;
-    background:#f3f3f3;
+    /* background:#f3f3f3; */
+    background:transparent;   /* ★重要 */
+    position:relative;
+    z-index:1;
 
+	tab-size: 4;
+    -moz-tab-size: 4;
+    
 }
 
 
@@ -273,74 +285,49 @@ body.landscape #resizer{
     box-sizing:border-box;
 }
 /* ===== ダークモード ===== */
-@media (prefers-color-scheme: dark){
+body.dark{
+    background:#1e1e1e;
+    color:#e0e0e0;
+}
 
-    body{
-        background:#1e1e1e;
-        color:#e0e0e0;
-    }
+body.dark #menu{
+    background:#2a2a2a;
+    border-bottom:1px solid #444;
+}
 
-    #menu{
-        background:#2a2a2a;
-        border-bottom:1px solid #444;
-    }
+body.dark #menu button{
+    background:#3a3a3a;
+    //* border:1px solid #555; *//
+    border-color:#555;
+    color:#eee;
+}
 
-    #menu button{
-        background:#3a3a3a;
-        border:1px solid #555;
-        color:#eee;
-    }
+body.dark #outline{
+    background:#252525;
+    border-color:#444;
+}
 
-    #outline{
-        background:#252525;
-        border-color:#444;
-    }
+body.dark #leftPane{
+    background:#10251d;
+    color:#ddd;
+}
 
-    #leftPane{
-        background:#10251d;
-        color:#ddd;
-    }
-    
-    #resizer{
-    	touch-action:none;
-	}
+body.dark #ruler{
+    background:#444422;
+    border-color:#555;
+}
 
-    #ruler{
-        background:#444422;
-        border-color:#555;
-    }
+body.dark #editor{
+    background:#1e1e1e;
+    color:#ffffff;
+}
 
-    #editor{
-        background:#1e1e1e;
-        color:#ffffff;
-    }
-
-    .outline-item.active-heading::before{
-        background:#00c896;
-    }
-
-    .current-line{
-        border-bottom:2px solid #ff6b5e;
-    }
-    body.dark{
-	    background:#1e1e1e;
-	    color:#e0e0e0;
-	}
-	body.dark #editor{
-	    background:#1e1e1e;
-	    color:#fff;
-	}
-    #statusBar{
-        background:#2a2a2a;
-        border-top:1px solid #444;
-        color:#ddd;
-    }
-    body.dark #statusBar{
+body.dark #statusBar{
     background:#2a2a2a;
     border-top:1px solid #444;
     color:#ddd;
-	}
 }
+
 
 
 
@@ -350,6 +337,7 @@ body.landscape #resizer{
     right:0;
     pointer-events:none;
     border-bottom:2px solid #ff3d2e;	//#0b3d2e;
+    z-index:3;   /* ← 追加 */
 }
 .heading-marker{
     position:absolute;
@@ -381,6 +369,157 @@ body.landscape #resizer{
     width:4px;
     background:#0b3d2e;
 }
+
+/* ===== ヘルプモーダル ===== */
+#helpModal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+}
+
+#helpModal.show{
+    display:flex;
+}
+
+#helpContent{
+    background:white;
+    padding:20px;
+    max-width:500px;
+    border-radius:8px;
+    font-size:14px;
+    
+    max-height:90vh;      /* ★ 追加 */
+    overflow-y:auto;      /* ★ 追加 */
+}
+
+body.dark #helpContent{
+    background:#2a2a2a;
+    color:#eee;
+}
+
+.modal {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    padding:10px;   /* 端に張り付かない */
+}
+.modal-content {
+    background:#fff;
+    width:100%;
+    max-width:600px;
+
+    max-height:90vh;      /* ← 超重要 */
+    display:flex;
+    flex-direction:column;
+
+    border-radius:10px;
+}
+.modal-header{
+    flex-shrink:0;          /* 縮まない */
+    padding:10px 15px;
+    border-bottom:1px solid #ccc;
+}
+.modal-body {
+    overflow-y:auto;      /* ← ここだけスクロール */
+    padding:15px;
+}
+@media (max-width:600px){
+
+    .modal-content{
+        max-height:90vh;        /* 画面を超えない */
+        display:flex;
+        flex-direction:column;
+    }
+}
+
+.editorStyle{
+    font-family:monospace;
+    font-size:14px;
+    line-height:1.6;
+    letter-spacing:0;
+
+    white-space:pre-wrap;
+    word-break:break-word;
+    overflow-wrap:break-word;
+
+    tab-size:4;
+    -moz-tab-size:4;
+
+    padding:4px;
+    box-sizing:border-box;
+}
+
+/* ghostLayer本体には色を指定しない */
+#ghostLayer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index: 2;
+    overflow:hidden;
+    box-sizing:border-box;
+    padding:4px;
+
+    white-space:pre-wrap;
+    word-break:break-word;
+    overflow-wrap:break-word;
+    
+    tab-size: 4;
+}
+
+/* 通常文字だけ透明 */
+.ghost-char{
+    color: transparent;
+}
+
+/* 本文だけ透明にする */
+.ghost-text{
+    color: transparent;
+}
+
+/* 記号の表示（ライト） */
+.eol,
+.tab{
+    color: rgba(0,0,0,0.35);
+}
+
+
+//.tab{
+//    opacity:0.4;
+//    color: rgba(0,0,0,0.35);
+//}
+//
+//.eol{
+//    opacity:0.35;
+//    color: rgba(0,0,0,0.35);
+//    margin-left:6px;   /* ← これで重なり解消 */
+//}
+
+
+/* 記号の表示（ダーク） */
+body.dark .eol,
+body.dark .tab{
+    color: rgba(255,255,255,0.45);
+}
+
+.ghost-line{
+    position:relative;
+    word-break:break-word;
+    white-space:pre-wrap;
+    overflow-wrap:break-word;
+}
+
+
+
+
 </style>
 </head>
 
@@ -404,7 +543,7 @@ body.landscape #resizer{
 <button onclick="replaceOne()">置換</button>
 <button onclick="replaceAll()">全</button>
 <button onclick="toggleDark()">🌙</button>
-
+<button onclick="toggleHelp()">？</button>
 <input type="file" id="fileInput" style="display:none">
 </div>
 
@@ -420,10 +559,11 @@ body.landscape #resizer{
 <div id="rightPane">
 <div id="ruler"></div>
 <div id="editorWrapper">
-<textarea id="editor"></textarea>
-<div id="mirror"></div>
-<div id="markerLayer"></div>
-<div id="currentLine" class="current-line"></div>
+	<div id="ghostLayer" class="editorStyle"></div>
+	<textarea id="editor" class="editorStyle"></textarea>
+	<div id="mirror"></div>
+	<div id="markerLayer"></div>
+	<div id="currentLine" class="current-line"></div>
 </div>
 <div id="statusBar">行 1、列 1</div>  <!-- ★ここ -->
 </div>
@@ -441,6 +581,7 @@ const fileInput=document.getElementById("fileInput");
 const currentLine=document.getElementById("currentLine");
 const mirror=document.getElementById("mirror");
 const markerLayer = document.getElementById("markerLayer");
+const ghostLayer = document.getElementById("ghostLayer");
 
 let collapsedHeadings=new Set();
 let currentFileName=null;
@@ -502,13 +643,18 @@ window.addEventListener("resize",adjustLayout);
 function setFontSize(size){
     const px=size;
     const lh=Math.round(px*1.5);
+
     editor.style.fontSize=px+"px";
     mirror.style.fontSize=px+"px";
     leftPane.style.fontSize=px+"px";
     ruler.style.fontSize=px+"px";
+    ghostLayer.style.fontSize=px+"px";      // ← 追加
+
     editor.style.lineHeight=lh+"px";
     mirror.style.lineHeight=lh+"px";
     leftPane.style.lineHeight=lh+"px";
+    ghostLayer.style.lineHeight=lh+"px";    // ← 追加
+
     updateAll();
 }
 function toggleMenu(){
@@ -709,7 +855,11 @@ function updateCursorPosition(){
     const lines = textBefore.split("\n");
 
     const lineNumber = lines.length;
-    const columnNumber = lines[lines.length - 1].length + 1;
+
+    // ★ ここを修正
+    const currentLineText = lines[lines.length - 1];
+
+    const columnNumber = getDisplayWidth(currentLineText);
 
     statusBar.textContent =
         "行 " + lineNumber + "、列 " + columnNumber;
@@ -900,14 +1050,115 @@ function toggleDark(){
     document.body.classList.toggle("dark");
 }
 
+function toggleHelp(){
+    document.getElementById("helpModal")
+        .classList.toggle("show");
+}
+
+function openModal(){
+    document.body.style.overflow = "hidden";
+}
+
+function closeModal(){
+    document.body.style.overflow = "";
+}
+
+function getDisplayWidth(str){
+
+    let width = 0;
+    const TAB_SIZE = 4;
+
+    for(const ch of str){
+
+        if(ch === "\t"){
+            width += TAB_SIZE;        // ← タブ幅分加算
+        }
+        else if(ch.match(/[^\x00-\x7F]/)){
+            width += 2;               // 全角
+        }
+        else{
+            width += 1;               // 半角
+        }
+    }
+
+    return width;
+}
+
+/* ===== タブキー入力 =====*/
+editor.addEventListener("keydown", function(e){
+
+    if (e.key === "PageUp" || e.key === "PageDown") {
+        e.preventDefault(); // デフォルトの「高さ変更」動作を無効化
+        const scrollAmount = editor.clientHeight * (e.key === "PageDown" ? 1 : -1);
+        editor.scrollTop += scrollAmount; // 代わりにスクロール
+        updateCurrentLine();
+        updateHeadingMarkers();
+    }
+    if(e.key === "Tab"){
+
+        e.preventDefault();
+
+        const start = this.selectionStart;
+        const end   = this.selectionEnd;
+
+        const tab = "\t";   // ← 本物のタブ
+
+        this.value =
+            this.value.substring(0, start)
+            + tab
+            + this.value.substring(end);
+
+        this.selectionStart = this.selectionEnd = start + 1;
+
+        updateAll();
+    }
+});
+
+/* ===== 透過レイヤー =====*/
+function updateGhostLayer(){
+
+    const escaped = editor.value
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+
+    let html = "";
+
+    for (let i = 0; i < escaped.length; i++) {
+
+        const ch = escaped[i];
+
+        if (ch === "\t") {
+		    html += '<span class="tab">→</span>' +
+            '<span class="ghost-char">&nbsp;&nbsp;&nbsp;</span>';
+        }
+        else if (ch === "\n") {
+            html += '<span class="eol">↵</span>\n';
+        }
+        else {
+            html += '<span class="ghost-char">' + ch + '</span>';
+        }
+    }
+
+    ghostLayer.innerHTML = html;
+    ghostLayer.style.height = editor.scrollHeight + "px";
+}
+
 
 /* ===== イベント ===== */
 editor.addEventListener("input",updateAll);
-editor.addEventListener("scroll",()=>{
-    leftPane.scrollTop=editor.scrollTop;
+editor.addEventListener("scroll", ()=>{
+    leftPane.scrollTop = editor.scrollTop;
+
+    ghostLayer.style.transform =
+        "translate(" +
+        (-editor.scrollLeft) + "px," +
+        (-editor.scrollTop) + "px)";
+
     updateCurrentLine();
-    updateHeadingMarkers();   // ← 必ず入れる
+    updateHeadingMarkers();
 });
+
 document.addEventListener("keydown",e=>{
     if(e.ctrlKey&&e.key==="s"){
         e.preventDefault();
@@ -922,6 +1173,7 @@ function updateAll(){
     updateOutline();
     updateCurrentLine();
     updateHeadingMarkers();   // ← 追加
+    updateGhostLayer();   // ★追加
 }
 
 
@@ -970,15 +1222,68 @@ resizer.addEventListener("pointermove", (e)=>{
             outline.style.height = newHeight + "px";
         }
     }
+
+    updateAll();   // ← これだけでOK
 });
 
 resizer.addEventListener("pointerup", (e)=>{
     isResizing = false;
     resizer.releasePointerCapture(e.pointerId);
+    updateAll();   // ★ 追加
+    ghostLayer.scrollTop = editor.scrollTop;
 });
 
 updateCursorPosition();
 
 </script>
+
+<div id="helpModal">
+  <div id="helpContent">
+    <h2>UME -Ultimate Markdown Editor- 説明書</h2>
+    <p>
+		<br>
+		●はじめに<br>
+		このエディタはhtmlで作成されているため、<br>
+		最近のブラウザであれば大体動作します。<br>
+		またPCだけでなく、モバイル機器でも動作します。<br>
+		　<br>
+		　<br>
+		Chrome系ブラウザなどの場合、<br>
+		「デスクトップ（ホーム画面）にアイコンを追加」<br>
+		などからインストールして擬似的にアプリ化することができます。<br>
+		　<br>
+		　<br>
+		●アウトラインについて<br>
+		Markdownの見出しレベルに準じたアウトラインです。<br>
+		行頭に「# 」のあるものを見出しとして扱います。<br>
+		「## 」「### 」など「#」の数で階層が深くなります。<br>
+		※「#」と「見出し文」の間にはスペースが必要です。<br>
+		　<br>
+		アウトラインエリアの見出しリストにある「▼」をクリックすると<br>
+		その見出しに含まれる深い階層を折りたたむことができます。<br>
+		「▶」に変化した部分を再度クリックすれば展開します。<br>
+		　<br>
+		アウトラインの見出しリストをクリックすると、<br>
+		該当する本文にジャンプします。<br>
+		　<br>
+		　<br>
+		●特別なメニューアイコン<br>
+		「Ξ」ボタン　：　メニューの折り畳み<br>
+		「🌙」ボタン　：　ダークモードへの切り替え<br>
+		　<br>
+		　<br>
+		●特殊な操作<br>
+		アウトラインエリアとテキストエリアの間の仕切りを<br>
+		ドラッグして動かすことで比率を変えることができます。<br>
+		またモバイル機の場合、自動回転に対応しています。<br>
+		　<br>
+		ＰＣの場合はウィンドウのサイズ変更で<br>
+		縦長、横長のモードが切り替わります。<br>
+		　
+    </p>
+    <button onclick="toggleHelp()">閉じる</button>
+  </div>
+</div>
+
 </body>
 </html>
