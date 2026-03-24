@@ -8,7 +8,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
-<title>Ultimate Markdown Editor</title>
+<title>Ultimate Markdown Editor V1.6</title>
 
 <style>
 html,body{
@@ -545,6 +545,7 @@ body.dark .tab{
 <button onclick="newFile()">新規</button>
 <button onclick="openFile()">開く</button>
 <button onclick="saveFile()">保存</button>
+<button id="toggleOutlineBtn" onclick="toggleOutline()">📖</button>
 
 <button onclick="setFontSize(16)">16</button>
 <button onclick="setFontSize(20)">20</button>
@@ -558,6 +559,7 @@ body.dark .tab{
 <button onclick="replaceOne()">置換</button>
 <button onclick="replaceAll()">全</button>
 <button onclick="toggleDark()">🌙</button>
+<button id="toggleSymbolsBtn" onclick="toggleSymbols()" title="記号表示の切替">¶</button>
 <button onclick="toggleHelp()">？</button>
 <input type="file" id="fileInput" style="display:none">
 </div>
@@ -600,6 +602,8 @@ const ghostLayer = document.getElementById("ghostLayer");
 
 let collapsedHeadings=new Set();
 let currentFileName=null;
+let showSymbols = false; // 初期値は非表示
+let showOutline = true; // 初期値は表示
 
 /* ===== 回転検出 ===== */
 function checkOrientation(){
@@ -677,6 +681,31 @@ function toggleMenu(){
     adjustLayout(); // 高さ再計算
 }
 
+/* アウトラインリサイズ関係処理 */
+function toggleOutline() {
+    showOutline = !showOutline;
+    const outlineEl = document.getElementById("outline");
+    const resizerEl = document.getElementById("resizer");
+
+    if (showOutline) {
+        // 表示に戻す（横画面・縦画面それぞれの初期値）
+        if (document.body.classList.contains("landscape")) {
+            outlineEl.style.display = "block";
+            outlineEl.style.width = "300px";
+        } else {
+            outlineEl.style.display = "block";
+            outlineEl.style.height = "200px";
+        }
+        resizerEl.style.display = "block";
+    } else {
+        // 非表示にする
+        outlineEl.style.display = "none";
+        resizerEl.style.display = "none";
+    }
+    
+    // レイアウト変更後に描画を更新
+    updateAll();
+}
 
 /* ===== ルーラー ===== */
 function updateRuler(){
@@ -810,6 +839,21 @@ function updateOutline(){
     }
 
     highlightCurrentHeading();
+}
+
+/* tab改行コード表示切替 */
+function toggleSymbols() {
+    showSymbols = !showSymbols;
+    
+    const btn = document.getElementById("toggleSymbolsBtn");
+    // ON/OFFが分かりやすいようにボタンの色を変える設定
+    btn.style.background = showSymbols ? "#ccc" : "#f0f0f0";
+    
+    if (!showSymbols) {
+        ghostLayer.innerHTML = ""; // 非表示時は中身を空にする
+    }
+    
+    updateGhostLayer(); // 再描画を実行
 }
 
 
@@ -1131,6 +1175,10 @@ editor.addEventListener("keydown", function(e){
 
 /* ===== 透過レイヤー =====*/
 function updateGhostLayer(){
+    // 非表示（false）なら処理をスキップして終了
+    if (!showSymbols) {
+        return;
+    }
 
     const escaped = editor.value
         .replace(/&/g,"&amp;")
@@ -1138,13 +1186,10 @@ function updateGhostLayer(){
         .replace(/>/g,"&gt;");
 
     let html = "";
-
     for (let i = 0; i < escaped.length; i++) {
-
         const ch = escaped[i];
-
         if (ch === "\t") {
-		    html += '<span class="tab">→</span>' +
+            html += '<span class="tab">→</span>' +
             '<span class="ghost-char">&nbsp;&nbsp;&nbsp;</span>';
         }
         else if (ch === "\n") {
@@ -1185,6 +1230,10 @@ function updateAll(){
     updateRuler();
     lineSpacer.style.height=ruler.offsetHeight+"px";
     updateLineNumbers();
+    // アウトラインが表示されている時だけ更新する
+    if (showOutline) {
+        updateOutline();
+    }
     updateOutline();
     updateCurrentLine();
     updateHeadingMarkers();   // ← 追加
@@ -1308,4 +1357,3 @@ updateCursorPosition();
 
 </body>
 </html>
-
